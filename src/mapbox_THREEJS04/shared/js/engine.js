@@ -179,23 +179,38 @@
 		$('#siteFoot p').text( 'Vertex: ' + _vertices + ', Faces: ' + _faces );
 
 
-		var _pos = fromLatLngToPoint( _lat, _lng, _zoom);
 
 
-		var _localX = ( _pos.x - ( _x * 256 ) );
-		var _localY = ( _pos.y - ( _y * 256 ) );
+		var _poslist = [
+			[_lat, _lng],
+			[-25.352173, 131.033198],
+			[-25.342787, 131.021568],
+			[-25.358921, 131.017362]
+		];
 
-		var _parX = _localX / 256;
-		var _parY = _localY / 256;
 
 
-		var _geometry = new THREE.IcosahedronGeometry( 1, 2 );
-		var _material = new THREE.MeshBasicMaterial({color: 0xFF0000, wireframe: true});
-		var _pin = new THREE.Mesh( _geometry, _material );
-		_pin.position.x = _parX * _gridSize * _grid - Math.floor( _gridSize * _grid * 0.5 );
-		_pin.position.z = _parY * _gridSize * _grid - Math.floor( _gridSize * _grid * 0.5 );
-		_pin.position.y = 30;
-		_world.add( _pin );
+		var len = _poslist.length;
+		for( var i = 0; i < len; i++ ){
+
+			var _pos = fromLatLngToPoint( _poslist[i][0], _poslist[i][1], _zoom);
+
+			var _localX = ( _pos.x - ( _x * 256 ) );
+			var _localY = ( _pos.y - ( _y * 256 ) );
+
+			var _parX = _localX / 256;
+			var _parY = _localY / 256;
+
+			var _geometry = new THREE.IcosahedronGeometry( 1, 2 );
+			var _material = new THREE.MeshBasicMaterial({color: 0xFF0000, wireframe: true});
+			var _pin = new THREE.Mesh( _geometry, _material );
+			_pin.position.x = _parX * _gridSize * _grid - Math.floor( _gridSize * _grid * 0.5 );
+			_pin.position.z = _parY * _gridSize * _grid - Math.floor( _gridSize * _grid * 0.5 );
+			_pin.position.y = 30;
+			_world.add( _pin );
+
+			console.log( _pin.position );
+		}
 
 
 	}
@@ -219,21 +234,16 @@
 		var L = 85.0511287798066;
 		var PI = Math.PI;
 		var _x = Math.pow( 2, z + 7 ) * ( _lng / 180 + 1 );
-
 		var _sinLat = Math.sin( PI / 180 * _lat );
 		var _sinL = Math.sin( PI / 180 * L );
-
 		var _y = Math.pow( 2, z + 7 ) / PI * 
 		(
 			- 1/2 * Math.log( (1.0 + _sinLat)/(1.0 - _sinLat ) )
 		+
 			1/2 * Math.log( (1.0 + _sinL)/(1.0 - _sinL ) )
 		);
-
-
 		return {x:_x>>0,y:_y>>0};
 	}
-
 })();
 
 
