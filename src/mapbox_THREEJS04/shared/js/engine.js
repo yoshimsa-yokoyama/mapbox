@@ -30,7 +30,7 @@
 	var _timeStamp = new Date().getTime();
 
 	var _dataSet = [];
-	var _grid = 1;		//	pow2
+	var _grid = 3;		//	pow2
 	var _gridSize = 100;
 
 	var _mainCanvas, _mainCtx;
@@ -180,14 +180,13 @@
 
 
 
-
+		//	check
 		var _poslist = [
 			[_lat, _lng],
 			[-25.352173, 131.033198],
 			[-25.342787, 131.021568],
 			[-25.358921, 131.017362]
 		];
-
 
 
 		var len = _poslist.length;
@@ -201,15 +200,23 @@
 			var _parX = _localX / 256;
 			var _parY = _localY / 256;
 
-			var _geometry = new THREE.IcosahedronGeometry( 1, 2 );
+			var _geometry = new THREE.IcosahedronGeometry( 1, 1 );
 			var _material = new THREE.MeshBasicMaterial({color: 0xFF0000, wireframe: true});
+			var _offset = _grid%2==0?0.5:0;
 			var _pin = new THREE.Mesh( _geometry, _material );
-			_pin.position.x = _parX * _gridSize * _grid - Math.floor( _gridSize * _grid * 0.5 );
-			_pin.position.z = _parY * _gridSize * _grid - Math.floor( _gridSize * _grid * 0.5 );
+			_pin.position.x = _parX * _gridSize - Math.floor( _gridSize * 0.5 ) + _gridSize * _offset;
+			_pin.position.z = _parY * _gridSize - Math.floor( _gridSize * 0.5 ) + _gridSize * _offset;
 			_pin.position.y = 30;
 			_world.add( _pin );
 
-			console.log( _pin.position );
+			var _geometry = new THREE.Geometry();
+			_geometry.vertices[0] = new THREE.Vector3( 0, 0, 0 );
+			_geometry.vertices[1] = new THREE.Vector3( 0, _pin.position.y, 0 );
+			var _material = new THREE.LineBasicMaterial({color: 0xFF0000});
+			var _line = new THREE.Line( _geometry, _material );
+			_line.position.x = _pin.position.x;
+			_line.position.z = _pin.position.z;
+			_world.add( _line );
 		}
 
 
