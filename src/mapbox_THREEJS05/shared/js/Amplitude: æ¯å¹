@@ -1,0 +1,50 @@
+Amplitude: 振幅
+Frequency: 周波数
+var vector = new THREE.Vector3();
+for ( var i = 0, l = objects.length; i < l; i ++ ) {
+
+	var phi = Math.acos( -1 + ( 2 * i ) / l );
+	var theta = Math.sqrt( l * Math.PI ) * phi;
+	var object = new THREE.Object3D();
+
+	object.position.x = 800 * Math.cos( theta ) * Math.sin( phi );
+	object.position.y = 800 * Math.sin( theta ) * Math.sin( phi );
+	object.position.z = 800 * Math.cos( phi );
+
+	vector.copy( object.position ).multiplyScalar( 2 );
+	object.lookAt( vector );
+	targets.sphere.push( object );
+}
+
+18*18 = 324
+15*15 = 225
+
+18 * 8 = 144
+
+
+
+support@circleci.com
+
+
+
+間違えてアカウントを登録してしまいました。
+私のアカウントの削除をお願いします。
+
+アカウント名
+nulldesign-M2
+
+よろしく
+
+Hello. I registered my account by mistake.
+Please delete my account.
+
+account name( from Github )
+nulldesign-M2
+
+Thank you
+
+
+
+
+
+Machigaete akaunto o tōroku shite shimatta. Watashi no akaunto no sakujo o onegaishimasu. Akaunto-mei nurudezain - M 2 yoroshiku
