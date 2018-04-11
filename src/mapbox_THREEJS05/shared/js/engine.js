@@ -4,9 +4,10 @@
 
 (function(){
 
-	var _world;
-	var _plane;
+	var _world;		//	THREE.jsラッパーライブラリ。自作	
+	var _plane;		//	地形Mesh
 
+	//	以下数点が位置情報。lat,lng,zoomはGoogleMapに準じます	
 	//	kagura
 	var _zoom = 13;
 	var _lng = 138.726655;
@@ -23,39 +24,57 @@
 	// var _lng = 140.657851;
 	// var _lat = 42.875400;
 
-	$('#siteBody').addClass('open');
-
-	//long: 180
-	//lat:90
-	//	https://www.google.co.jp/maps/@-25.344255, 131.034774,14z?hl=ja
 
 	//	AirsRock
 	// var _zoom = 12;
 	// var _lng = 131.034774;
 	// var _lat = -25.344255;
 
+
+	/*
+		緯度経度から表示に使う画像タイルのインデックスを算出。
+		zoomによって値が異なる。
+		https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+	*/
 	var _x = long2tile( _lng, _zoom );
 	var _y = lat2tile( _lat, _zoom );
+
+	//	FPS出すための変数。実質不要
 	var _timeStamp = new Date().getTime();
 
-	var _dataSet = [];
-	var _grid = 2;		//	pow2
-	var _gridSize = 100;
-	var _scaleHeight = 64.0 / Math.pow( 2, 24 - _zoom ) * _gridSize / 100;
+	var _dataSet = [];	//	フィールド生成前のデータを格納しておく配列。96行目のsetData( _x, _y, _zoom )でインプット
+	var _grid = 2;		//	地形データを表示するのに一変何ますのタイルを使うか。２なら 2*2で4つのタイルを使う
+	var _gridSize = 100;	//	１タイルあたりのサイズ
+	var _scaleHeight = 64.0 / Math.pow( 2, 24 - _zoom ) * _gridSize / 100;	//	高さの変数
 
-	var _mainCanvas, _mainCtx;
-	var _subCanvas, _subCtx;
+	var _mainCanvas, _mainCtx;	//	テクスチャを保持するcanvas
+	var _subCanvas, _subCtx;	//	地形データ画像を保持するcanvas
 
 	var _api = 'https://api.mapbox.com';
 	var _accessToken = 'pk.eyJ1IjoibnVsbGRlc2lnbiIsImEiOiJjamZrcGdtbnowODdlMndzMmE2ZHc5anlrIn0.fsWuly11P-SWfGz9VntnSg';
 
-	//	
-	init();
-	update();
-	setData( _x, _y, _zoom );
-	load();
 
+
+
+
+	/*
+		execute();
+	*/
+
+
+	//	
+	$('#siteBody').addClass('open');	//	フェードイン
+	init();		//	THREE.jsとcanvasの初期化
+	update();	//	FPS表示計算開始
+	setData( _x, _y, _zoom );	//	先ほど出したタイルのインデックスとzoomからデータセットを生成
+	load();	//	生成されたデータセットから画像を読み込み、3Dに変換。
+
+
+	/*
+		Method
+	*/
 	function init(){
+		//	THREE.js
 		_world = new world('webglView');
 		_world.render();
 
@@ -97,6 +116,8 @@
 		}
 	}
 
+
+	//	meshが大きすぎるときに。荒れるので再考。
 	function resizeCanvas(){
 		var _canvas = document.createElement('canvas');
 		_canvas.width = 256;
@@ -108,6 +129,9 @@
 		_subCtx = _ctx;
 	}
 
+	//	画像を読み込んでCanvasに転写していく。
+	//	一枚の大きなIMGを使うことで複数のmeshを使わなくて済む	
+	//	エラー処理が抜けてるのであとでやる
 	function load(){
 		if( _dataSet.length ){
 			var _data = _dataSet.pop();
@@ -136,14 +160,14 @@
 	}
 
 	function createPlane(){
-		//	rgb
+		//	地形用のIMGからピクセル単位で値を取得していく
 		var _imagedata = _subCtx.getImageData(0, 0, _subCanvas.width, _subCanvas.height);
 		var _data = _imagedata.data;
 
 		var _geometry = new THREE.PlaneGeometry( _gridSize * _grid, _gridSize * _grid, _subCanvas.width-1, _subCanvas.height-1 );
 		_geometry.rotateX( - Math.PI * 0.5 );
 
-		var _posMin = Number.POSITIVE_INFINITY;
+		var _posMin = Number.POSITIVE_INFINITY;	//	標高が高いところは見切れるので、均す作業
 
 		var len = _geometry.vertices.length;
 		for( var i = 0; i < len; i++ ){
@@ -151,7 +175,7 @@
 			var _g = _data[ i * 4 + 1 ];
 			var _b = _data[ i * 4 + 2 ];
 			var _a = _data[ i * 4 + 3 ];
-			var _posy = - 10000 + ((_r * 256 * 256 + _g * 256 + _b) * 0.1);
+			var _posy = - 10000 + ((_r * 256 * 256 + _g * 256 + _b) * 0.1);	//	色情報を高度に変換するおきまりの式
 			_geometry.vertices[i].y = _posy * _scaleHeight;
 
 			_posMin = _posMin < _posy ? _posMin : _posy;
@@ -167,6 +191,10 @@
 		_geometry.computeBoundingSphere();
 		_geometry.computeFaceNormals();
 
+		/*
+			各画像をTHREE.Materialにセット。
+
+		*/
 		var _t1 = _mainCanvas.toDataURL("image/png");
 		var _t0 = _subCanvas.toDataURL("image/png");
 		var _texture = new THREE.TextureLoader().load( _t1 );
@@ -184,12 +212,14 @@
 		var _plane = new THREE.Mesh( _geometry, _material );
 		_world.add( _plane );
 
-		//	
+		//	頂点数とポリゴン数の表記。いらない
 		var _vertices = _geometry.vertices.length;
 		var _faces = _geometry.faces.length;
 		$('#siteFoot p').text( 'Vertex: ' + _vertices + ', Faces: ' + _faces );
 
-		//	check
+		//	check	
+		//	ピンを立ててみる。
+		//	エアーズロックと座標設定の点にピンを打つ。
 		var _poslist = [
 			[_lat, _lng],
 			[-25.352173, 131.033198],
@@ -222,6 +252,7 @@
 			_world.add( _pin );
 
 			//	Raycaster
+			//	_planeの指定位置の高さを算出するため、Raycasterというものをつかう。
 			var _start = new THREE.Vector3( _pos.x, 0, _pos.z );
 			var _dir = new THREE.Vector3( 0, 1, 0 );
 			var _ray = new THREE.Raycaster( _start, _dir );
@@ -246,6 +277,8 @@
 		}
 	}
 
+	//	以下座標変換系
+
 	function long2tile(lon,zoom) { return (Math.floor((lon+180)/360*Math.pow(2,zoom))); }
  	function lat2tile(lat,zoom)  { return (Math.floor((1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,zoom))); }
 	function tile2long(x,z) {
@@ -255,11 +288,6 @@
 		var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
 		return (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
 	}
-
-	//	http://www.trail-note.net/tech/coordinate/
-	//	http://hosohashi.blog59.fc2.com/blog-entry-5.html
-	//	https://ja.wikipedia.org/wiki/逆三角関数
-	//	https://mathtrain.jp/invhyp
 	function fromLatLngToPoint( _lat, _lng, z ){
 		var L = 85.0511287798066;
 		var PI = Math.PI;
@@ -274,6 +302,16 @@
 		);
 		return {x:_x>>0,y:_y>>0};
 	}
+
+	/*
+		参考URL
+		https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+		http://www.trail-note.net/tech/coordinate/
+		http://hosohashi.blog59.fc2.com/blog-entry-5.html
+		https://ja.wikipedia.org/wiki/逆三角関数
+		https://mathtrain.jp/invhyp
+		https://www.mapbox.com/blog/tags/terrain/
+	*/
 })();
 
 
